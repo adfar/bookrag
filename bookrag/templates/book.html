@@ -366,7 +366,7 @@
 
                 // Build system prompt with book content
                 const systemPrompt = CHAT_CONFIG.system_prompt +
-                    "\\n\\nBook content:\\n" + BOOK_CONTENT;
+                    "\n\nBook content:\n" + BOOK_CONTENT;
 
                 if (backend === 'anthropic') {
                     return await callAnthropic(systemPrompt, userMessage);
@@ -405,6 +405,9 @@
                 }
 
                 const data = await response.json();
+                if (!data || !data.content || !Array.isArray(data.content) || data.content.length === 0) {
+                    throw new Error('Invalid Anthropic API response structure');
+                }
                 return data.content[0].text;
             }
 
@@ -432,6 +435,9 @@
                 }
 
                 const data = await response.json();
+                if (!data || !data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
+                    throw new Error('Invalid OpenAI API response structure');
+                }
                 return data.choices[0].message.content;
             }
 
@@ -458,6 +464,9 @@
                 }
 
                 const data = await response.json();
+                if (!data || !data.message || !data.message.content) {
+                    throw new Error('Invalid Ollama API response structure');
+                }
                 return data.message.content;
             }
         }
