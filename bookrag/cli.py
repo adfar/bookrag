@@ -1,5 +1,6 @@
 """Command-line interface for bookrag."""
 import click
+import subprocess
 from pathlib import Path
 from bookrag.builder import build_book
 
@@ -21,7 +22,7 @@ def build(source_dir: Path, output_file: Path):
     try:
         build_book(source_dir, output_file)
         click.echo(f"✓ Book built successfully: {output_file}")
-    except Exception as e:
+    except (FileNotFoundError, ValueError, subprocess.CalledProcessError) as e:
         click.echo(f"✗ Error: {e}", err=True)
         raise click.Abort()
 
