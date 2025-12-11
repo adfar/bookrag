@@ -1,0 +1,10 @@
+title: "Sample Book"
+author: "Test Author"
+
+chapters:
+  - id: "intro"
+    title: "Introduction"
+    folder: "01-intro"
+  - id: "chapter1"
+    title: "Chapter 1"
+    folder: "02-chapter1"
