@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .book-container {
+            display: grid;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .book-container.two-column {
+            grid-template-columns: 250px 1fr;
+        }
+
+        .book-container.three-column {
+            grid-template-columns: 250px 1fr 350px;
+        }
+
+        /* Table of Contents */
+        .toc {
+            background: #f8f9fa;
+            border-right: 1px solid #dee2e6;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .toc h2 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #212529;
+        }
+
+        .toc ul {
+            list-style: none;
+        }
+
+        .toc li {
+            margin-bottom: 8px;
+        }
+
+        .toc a {
+            color: #495057;
+            text-decoration: none;
+            display: block;
+            padding: 8px 12px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .toc a:hover {
+            background: #e9ecef;
+            color: #212529;
+        }
+
+        .toc a.active {
+            background: #007bff;
+            color: white;
+        }
+
+        /* Content Area */
+        .content {
+            padding: 40px 60px;
+            overflow-y: auto;
+        }
+
+        .chapter {
+            display: none;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .chapter.active {
+            display: block;
+        }
+
+        .content h1 {
+            font-size: 32px;
+            margin-bottom: 24px;
+            color: #212529;
+        }
+
+        .content h2 {
+            font-size: 24px;
+            margin-top: 32px;
+            margin-bottom: 16px;
+            color: #343a40;
+        }
+
+        .content h3 {
+            font-size: 20px;
+            margin-top: 24px;
+            margin-bottom: 12px;
+            color: #495057;
+        }
+
+        .content p {
+            margin-bottom: 16px;
+        }
+
+        .content pre {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 16px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+        }
+
+        .content code {
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 14px;
+        }
+
+        .content pre code {
+            background: none;
+            padding: 0;
+        }
+
+        .content ul, .content ol {
+            margin-bottom: 16px;
+            padding-left: 32px;
+        }
+
+        .content li {
+            margin-bottom: 8px;
+        }
+
+        /* Chat Widget */
+        .chat-widget {
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+            border-left: 1px solid #dee2e6;
+        }
+
+        .chat-header {
+            background: #007bff;
+            color: white;
+            padding: 16px 20px;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .chat-message {
+            margin-bottom: 16px;
+        }
+
+        .chat-message.user {
+            text-align: right;
+        }
+
+        .chat-message.assistant {
+            text-align: left;
+        }
+
+        .chat-message .bubble {
+            display: inline-block;
+            max-width: 80%;
+            padding: 10px 14px;
+            border-radius: 12px;
+            word-wrap: break-word;
+        }
+
+        .chat-message.user .bubble {
+            background: #007bff;
+            color: white;
+        }
+
+        .chat-message.assistant .bubble {
+            background: #f8f9fa;
+            color: #212529;
+        }
+
+        .chat-input {
+            border-top: 1px solid #dee2e6;
+            padding: 16px;
+        }
+
+        .chat-input textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            resize: vertical;
+            min-height: 60px;
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        .chat-input button {
+            width: 100%;
+            margin-top: 8px;
+            padding: 10px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .chat-input button:hover {
+            background: #0056b3;
+        }
+
+        .chat-input button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="book-container {{ layout_class }}">
+        <!-- Table of Contents -->
+        <nav class="toc">
+            <h2>{{ title }}</h2>
+            <ul id="toc-list">
+                {{ toc_html|safe }}
+            </ul>
+        </nav>
+
+        <!-- Content Area -->
+        <main class="content">
+            {{ chapters_html|safe }}
+        </main>
+
+        <!-- Chat Widget (only if AI configured) -->
+        {% if chat_html %}
+        {{ chat_html|safe }}
+        {% endif %}
+    </div>
+
+    <script>
+        // Book content for AI context
+        const BOOK_CONTENT = {{ book_content_json|safe }};
+
+        // Chat configuration
+        const CHAT_CONFIG = {{ chat_config_json|safe }};
+
+        // Chapter navigation
+        document.addEventListener('DOMContentLoaded', function() {
+            const tocLinks = document.querySelectorAll('#toc-list a');
+            const chapters = document.querySelectorAll('.chapter');
+
+            tocLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const chapterId = this.dataset.chapterId;
+
+                    // Update active TOC link
+                    tocLinks.forEach(l => l.classList.remove('active'));
+                    this.classList.add('active');
+
+                    // Show selected chapter
+                    chapters.forEach(ch => ch.classList.remove('active'));
+                    document.getElementById(`chapter-${chapterId}`).classList.add('active');
+                });
+            });
+
+            // Activate first chapter by default
+            if (tocLinks.length > 0) {
+                tocLinks[0].classList.add('active');
+            }
+            if (chapters.length > 0) {
+                chapters[0].classList.add('active');
+            }
+
+            // Initialize chat if configured
+            if (CHAT_CONFIG) {
+                initializeChat();
+            }
+        });
+
+        // Chat functionality
+        function initializeChat() {
+            const sendBtn = document.getElementById('send-btn');
+            const userInput = document.getElementById('user-input');
+            const messagesContainer = document.getElementById('chat-messages');
+
+            if (!sendBtn || !userInput || !messagesContainer) return;
+
+            sendBtn.addEventListener('click', handleSend);
+            userInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                }
+            });
+
+            async function handleSend() {
+                const message = userInput.value.trim();
+                if (!message) return;
+
+                // Add user message to UI
+                addMessage('user', message);
+                userInput.value = '';
+                sendBtn.disabled = true;
+
+                try {
+                    // Send to AI
+                    const response = await sendToAI(message);
+                    addMessage('assistant', response);
+                } catch (error) {
+                    showError(error.message);
+                } finally {
+                    sendBtn.disabled = false;
+                }
+            }
+
+            function addMessage(role, content) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `chat-message ${role}`;
+
+                const bubble = document.createElement('div');
+                bubble.className = 'bubble';
+                bubble.textContent = content;
+
+                messageDiv.appendChild(bubble);
+                messagesContainer.appendChild(messageDiv);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+
+            function showError(message) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message';
+                errorDiv.textContent = `Error: ${message}`;
+                messagesContainer.appendChild(errorDiv);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+
+            async function sendToAI(userMessage) {
+                const backend = CHAT_CONFIG.backend;
+
+                // Build system prompt with book content
+                const systemPrompt = CHAT_CONFIG.system_prompt +
+                    "\\n\\nBook content:\\n" + BOOK_CONTENT;
+
+                if (backend === 'anthropic') {
+                    return await callAnthropic(systemPrompt, userMessage);
+                } else if (backend === 'openai') {
+                    return await callOpenAI(systemPrompt, userMessage);
+                } else if (backend === 'ollama') {
+                    return await callOllama(systemPrompt, userMessage);
+                } else {
+                    throw new Error(`Unsupported backend: ${backend}`);
+                }
+            }
+
+            async function callAnthropic(systemPrompt, userMessage) {
+                const apiKey = prompt('Enter your Anthropic API key:');
+                if (!apiKey) throw new Error('API key required');
+
+                const response = await fetch('https://api.anthropic.com/v1/messages', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': apiKey,
+                        'anthropic-version': '2023-06-01'
+                    },
+                    body: JSON.stringify({
+                        model: CHAT_CONFIG.model || 'claude-3-5-sonnet-20241022',
+                        max_tokens: 1024,
+                        system: systemPrompt,
+                        messages: [
+                            { role: 'user', content: userMessage }
+                        ]
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API request failed: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                return data.content[0].text;
+            }
+
+            async function callOpenAI(systemPrompt, userMessage) {
+                const apiKey = prompt('Enter your OpenAI API key:');
+                if (!apiKey) throw new Error('API key required');
+
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: CHAT_CONFIG.model || 'gpt-4',
+                        messages: [
+                            { role: 'system', content: systemPrompt },
+                            { role: 'user', content: userMessage }
+                        ]
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API request failed: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                return data.choices[0].message.content;
+            }
+
+            async function callOllama(systemPrompt, userMessage) {
+                const baseUrl = CHAT_CONFIG.base_url || 'http://localhost:11434';
+
+                const response = await fetch(`${baseUrl}/api/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: CHAT_CONFIG.model || 'llama2',
+                        messages: [
+                            { role: 'system', content: systemPrompt },
+                            { role: 'user', content: userMessage }
+                        ],
+                        stream: false
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API request failed: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                return data.message.content;
+            }
+        }
+    </script>
+</body>
+</html>
