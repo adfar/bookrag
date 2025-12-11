@@ -1,9 +1,10 @@
 import pytest
+import subprocess
 from pathlib import Path
 from bookrag.builder import build_book
 
 
-def test_build_sample_book(tmp_path):
+def test_build_sample_book(tmp_path: Path) -> None:
     """Test building complete book from sample fixture."""
     source_dir = Path(__file__).parent / "fixtures" / "sample-book"
     output_file = tmp_path / "output.html"
@@ -24,7 +25,7 @@ def test_build_sample_book(tmp_path):
     assert 'chapter-chapter1' in html_content
 
 
-def test_build_with_ai_config(tmp_path):
+def test_build_with_ai_config(tmp_path: Path) -> None:
     """Test building book with AI chat enabled."""
     # Create test book with AI config
     source_dir = tmp_path / "book-with-ai"
@@ -58,10 +59,8 @@ chapters:
     assert 'AI Assistant' in html_content
 
 
-def test_pandoc_not_installed(tmp_path, monkeypatch):
+def test_pandoc_not_installed(tmp_path: Path, monkeypatch) -> None:
     """Test graceful error when pandoc not installed."""
-    import subprocess
-
     def mock_run(*args, **kwargs):
         raise FileNotFoundError("pandoc not found")
 
