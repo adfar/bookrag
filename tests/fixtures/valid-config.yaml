@@ -1,0 +1,16 @@
+title: "Test Book"
+author: "Test Author"
+
+ai:
+  backend: "anthropic"
+  model: "claude-3-5-sonnet-20241022"
+  api_key_env: "ANTHROPIC_API_KEY"
+  system_prompt: "You are a helpful tutor."
+
+chapters:
+  - id: "intro"
+    title: "Introduction"
+    folder: "01-intro"
+  - id: "chapter1"
+    title: "Chapter 1"
+    folder: "02-chapter1"
