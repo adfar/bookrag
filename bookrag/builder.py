@@ -60,11 +60,11 @@ def build_book(source_dir: Path, output_file: Path):
         # Convert with pandoc
         chapter_html = convert_markdown_to_html(chapter_file)
 
-        # Wrap in chapter div
-        display = "block" if i == 0 else "none"
+        # Wrap in chapter div (first chapter gets active class)
+        active_class = " active" if i == 0 else ""
         wrapped_html = (
-            f'<div class="chapter" id="chapter-{chapter["id"]}" '
-            f'style="display:{display}">\n{chapter_html}\n</div>'
+            f'<div class="chapter{active_class}" id="chapter-{chapter["id"]}">'
+            f'\n{chapter_html}\n</div>'
         )
         chapters_html.append(wrapped_html)
 
