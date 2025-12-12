@@ -1,0 +1,7 @@
+# Invalid config - missing title
+author: "Test Author"
+
+chapters:
+  - id: "intro"
+    title: "Introduction"
+    folder: "01-intro"

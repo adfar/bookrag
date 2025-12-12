@@ -1,0 +1,7 @@
+title: "Minimal Book"
+author: "Test Author"
+
+chapters:
+  - id: "intro"
+    title: "Introduction"
+    folder: "01-intro"
