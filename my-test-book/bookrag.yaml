@@ -1,0 +1,10 @@
+title: "My First Interactive Book"
+author: "Demo User"
+
+chapters:
+  - id: "start"
+    title: "Getting Started"
+    folder: "01-getting-started"
+  - id: "examples"
+    title: "Code Examples"
+    folder: "02-examples"
