@@ -2,6 +2,7 @@ import pytest
 import shutil
 import subprocess
 from pathlib import Path
+from unittest.mock import patch, Mock
 from bookrag.builder import build_book
 
 # Check if pandoc is installed
@@ -14,10 +15,29 @@ def test_build_sample_book(tmp_path: Path) -> None:
     source_dir = Path(__file__).parent / "fixtures" / "sample-book"
     output_file = tmp_path / "output.html"
 
-    build_book(source_dir, output_file)
+    # Mock Ollama availability and embedding generation
+    with patch('bookrag.builder.check_ollama_available', return_value=True), \
+         patch('bookrag.builder.generate_embeddings') as mock_embed:
+        # Return mock chunks with embeddings
+        mock_embed.return_value = [
+            Mock(to_dict=lambda: {
+                "id": "intro-1",
+                "chapter_id": "intro",
+                "heading": "Introduction",
+                "content": "Test content",
+                "token_count": 10,
+                "embedding": [0.1, 0.2, 0.3]
+            })
+        ]
+
+        build_book(source_dir, output_file)
 
     # Verify output exists
     assert output_file.exists()
+
+    # Verify chunks.json was created
+    chunks_file = tmp_path / "chunks.json"
+    assert chunks_file.exists()
 
     # Verify HTML content
     html_content = output_file.read_text()
@@ -34,6 +54,8 @@ def test_build_sample_book(tmp_path: Path) -> None:
     # Verify Ollama config is embedded
     assert 'llama3.2' in html_content
     assert 'localhost:11434' in html_content
+    # Verify chunks are embedded
+    assert 'CHUNKS' in html_content
 
 
 def test_pandoc_not_installed(tmp_path: Path, monkeypatch) -> None:
@@ -46,5 +68,19 @@ def test_pandoc_not_installed(tmp_path: Path, monkeypatch) -> None:
     source_dir = Path(__file__).parent / "fixtures" / "sample-book"
     output_file = tmp_path / "output.html"
 
-    with pytest.raises(FileNotFoundError, match="Pandoc not found"):
-        build_book(source_dir, output_file)
+    # Mock Ollama availability
+    with patch('bookrag.builder.check_ollama_available', return_value=True):
+        with pytest.raises(FileNotFoundError, match="Pandoc not found"):
+            build_book(source_dir, output_file)
+
+
+def test_ollama_not_running(tmp_path: Path) -> None:
+    """Test graceful error when Ollama not running."""
+    from bookrag.embeddings import OllamaConnectionError
+
+    source_dir = Path(__file__).parent / "fixtures" / "sample-book"
+    output_file = tmp_path / "output.html"
+
+    with patch('bookrag.builder.check_ollama_available', return_value=False):
+        with pytest.raises(OllamaConnectionError, match="Ollama is not running"):
+            build_book(source_dir, output_file)

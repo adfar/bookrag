@@ -255,8 +255,8 @@
     </div>
 
     <script>
-        // Book content for AI context (will be replaced with RAG in later steps)
-        const BOOK_CONTENT = {{ book_content_json|safe }};
+        // Chunks with embeddings for RAG
+        const CHUNKS = {{ chunks_json|safe }};
 
         // Chat configuration (Ollama only)
         const CHAT_CONFIG = {{ chat_config_json|safe }};
@@ -350,9 +350,15 @@
             }
 
             async function sendToOllama(userMessage) {
-                // Build system prompt with book content (will use RAG chunks later)
+                // Build context from chunks (RAG retrieval will be added in next step)
+                // For now, use first 3 chunks as basic context
+                const contextChunks = CHUNKS.slice(0, 3);
+                const context = contextChunks.map(chunk =>
+                    `[${chunk.heading || 'Section'}]\n${chunk.content}`
+                ).join('\n\n---\n\n');
+
                 const systemPrompt = CHAT_CONFIG.system_prompt +
-                    "\n\nBook content:\n" + BOOK_CONTENT;
+                    "\n\nRelevant context from the book:\n" + context;
 
                 const response = await fetch('http://localhost:11434/api/chat', {
                     method: 'POST',

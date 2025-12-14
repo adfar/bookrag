@@ -5,6 +5,8 @@ from pathlib import Path
 from typing import Dict, Any, List
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from bookrag.config import load_config
+from bookrag.chunker import chunk_markdown
+from bookrag.embeddings import generate_embeddings, check_ollama_available, OllamaConnectionError
 
 def generate_toc(chapters: List[Dict[str, str]]) -> str:
     """Generate TOC HTML from chapters list.
@@ -38,12 +40,16 @@ def build_book(source_dir: Path, output_file: Path):
     config_path = source_dir / "bookrag.yaml"
     config = load_config(config_path)
 
-    # Always use 3-column layout (AI is mandatory in v1)
-    layout_class = "three-column"
+    # Check Ollama availability
+    if not check_ollama_available():
+        raise OllamaConnectionError(
+            "Ollama is not running. Please start Ollama with: ollama serve\n"
+            "Then ensure you have the embedding model: ollama pull nomic-embed-text"
+        )
 
     # Process each chapter through pandoc
     chapters_html = []
-    book_content_parts = []
+    all_chunks = []
 
     for i, chapter in enumerate(config["chapters"]):
         chapter_folder = source_dir / chapter["folder"]
@@ -52,11 +58,19 @@ def build_book(source_dir: Path, output_file: Path):
         if not chapter_file.exists():
             raise FileNotFoundError(f"Chapter file not found: {chapter_file}")
 
-        # Read markdown for book content
+        # Read markdown content
         with open(chapter_file, 'r') as f:
-            book_content_parts.append(f.read())
+            markdown_content = f.read()
 
-        # Convert with pandoc
+        # Chunk the markdown content
+        chapter_chunks = chunk_markdown(
+            content=markdown_content,
+            chapter_id=chapter["id"],
+            max_tokens=500
+        )
+        all_chunks.extend(chapter_chunks)
+
+        # Convert with pandoc for HTML display
         chapter_html = convert_markdown_to_html(chapter_file)
 
         # Wrap in chapter div (first chapter gets active class)
@@ -66,6 +80,15 @@ def build_book(source_dir: Path, output_file: Path):
             f'\n{chapter_html}\n</div>'
         )
         chapters_html.append(wrapped_html)
+
+    # Generate embeddings for all chunks
+    print(f"Generating embeddings for {len(all_chunks)} chunks...")
+    chunks_with_embeddings = generate_embeddings(
+        chunks=all_chunks,
+        model=config["embedding_model"],
+        progress_callback=lambda cur, total: print(f"  Embedding {cur}/{total}...")
+    )
+    print("Embeddings complete.")
 
     # Generate TOC
     toc_html = generate_toc(config["chapters"])
@@ -89,15 +112,17 @@ def build_book(source_dir: Path, output_file: Path):
         "system_prompt": config["system_prompt"],
     }
 
+    # Convert chunks to serializable format
+    chunks_data = [chunk.to_dict() for chunk in chunks_with_embeddings]
+
     # Prepare template variables
     template_vars = {
         "title": config.get("title", "Book"),
         "author": config.get("author", ""),
-        "layout_class": layout_class,
         "toc_html": toc_html,
         "chapters_html": "\n".join(chapters_html),
         "chat_html": chat_html,
-        "book_content_json": json.dumps("\n\n".join(book_content_parts)),
+        "chunks_json": json.dumps(chunks_data),
         "chat_config_json": json.dumps(chat_config),
     }
 
@@ -110,10 +135,20 @@ def build_book(source_dir: Path, output_file: Path):
     template = env.get_template("book.html")
     output_html = template.render(**template_vars)
 
-    # Write output
+    # Write output files
     output_file.parent.mkdir(parents=True, exist_ok=True)
+
+    # Write HTML
     with open(output_file, 'w') as f:
         f.write(output_html)
+
+    # Write chunks.json alongside HTML
+    chunks_file = output_file.parent / "chunks.json"
+    with open(chunks_file, 'w') as f:
+        json.dump(chunks_data, f)
+
+    print(f"Built: {output_file}")
+    print(f"Chunks: {chunks_file} ({len(chunks_data)} chunks)")
 
 
 def convert_markdown_to_html(markdown_file: Path) -> str:
