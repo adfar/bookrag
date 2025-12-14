@@ -1,25 +1,36 @@
 # Bookrag
 
-Convert markdown manuscripts into interactive web books with optional AI chat integration.
+Convert markdown manuscripts into interactive web books with AI-powered RAG chat.
 
 ## Features
 
-- 📚 Convert markdown manuscripts to single-page web books
-- 🎨 Clean 3-column layout: TOC, content, AI chat
-- 🤖 Optional AI chat with multiple backend support (Anthropic, OpenAI, Ollama)
-- 📱 Responsive design with minimal CSS
-- ⚙️ Flexible configuration via YAML
-- 📁 Folder-based chapter organization
+- Convert markdown manuscripts to single-page web books
+- 3-column layout: TOC, content, AI chat
+- RAG-based AI chat using local Ollama models
+- Semantic search across book content
+- Responsive design with minimal CSS
+- Flexible configuration via YAML
+- Folder-based chapter organization
+
+## Requirements
+
+- Python 3.11+
+- [Pandoc](https://pandoc.org/installing.html) for markdown conversion
+- [Ollama](https://ollama.ai/) for AI chat and embeddings
 
 ## Installation
 
-Requires Python 3.8+ and [Pandoc](https://pandoc.org/installing.html).
-
 ```bash
-# Install pandoc first
+# Install pandoc
 # macOS: brew install pandoc
 # Ubuntu: apt-get install pandoc
-# Windows: https://pandoc.org/installing.html
+
+# Install Ollama (https://ollama.ai/)
+# macOS: brew install ollama
+
+# Pull required models
+ollama pull llama3.2          # Chat model
+ollama pull nomic-embed-text  # Embedding model
 
 # Install bookrag
 pip install -e .
@@ -27,7 +38,13 @@ pip install -e .
 
 ## Quick Start
 
-1. **Create project structure:**
+1. **Start Ollama:**
+
+```bash
+ollama serve
+```
+
+2. **Create project structure:**
 
 ```bash
 mkdir my-book
@@ -35,11 +52,14 @@ cd my-book
 mkdir 01-introduction 02-chapter-1
 ```
 
-2. **Create `bookrag.yaml`:**
+3. **Create `bookrag.yaml`:**
 
 ```yaml
 title: "My Book"
 author: "Your Name"
+model: "llama3.2"
+embedding_model: "nomic-embed-text"
+system_prompt: "You are a helpful tutor for this book."
 
 chapters:
   - id: "intro"
@@ -50,30 +70,32 @@ chapters:
     folder: "02-chapter-1"
 ```
 
-3. **Add markdown content:**
+4. **Add markdown content:**
 
 ```bash
 echo "# Introduction\n\nWelcome to my book!" > 01-introduction/content.md
 echo "# Chapter 1\n\nFirst chapter content." > 02-chapter-1/content.md
 ```
 
-4. **Build the book:**
+5. **Build the book:**
 
 ```bash
 bookrag build . output.html
 ```
 
-5. **Open `output.html` in your browser!**
+6. **Open `output.html` in your browser!**
+
+Make sure Ollama is running when viewing the book to enable chat.
 
 ## Configuration
 
-See [docs/configuration.md](docs/configuration.md) for detailed configuration options.
-
-### Basic Configuration (No AI)
+### Required Fields
 
 ```yaml
-title: "Book Title"
-author: "Author Name"
+title: "Book Title"                    # Book title
+model: "llama3.2"                      # Ollama chat model
+embedding_model: "nomic-embed-text"    # Ollama embedding model
+system_prompt: "You are helpful."      # AI system prompt
 
 chapters:
   - id: "intro"
@@ -81,31 +103,27 @@ chapters:
     folder: "01-introduction"
 ```
 
-### With AI Chat
+### Optional Fields
 
 ```yaml
-title: "Book Title"
-author: "Author Name"
-
-ai:
-  backend: "anthropic"  # or "openai", "ollama"
-  model: "claude-3-5-sonnet-20241022"
-  api_key_env: "ANTHROPIC_API_KEY"
-  system_prompt: "You are a helpful tutor for this textbook."
-
-chapters:
-  - id: "intro"
-    title: "Introduction"
-    folder: "01-introduction"
+author: "Author Name"                  # Optional author
 ```
 
-## AI Backend Support
+## How It Works
 
-- **Anthropic Claude**: Set `backend: "anthropic"`, requires API key
-- **OpenAI GPT**: Set `backend: "openai"`, requires API key
-- **Ollama (local)**: Set `backend: "ollama"`, specify `base_url` if needed
+### Build Time
+1. Parse chapters from markdown files
+2. Chunk content by headings (max 500 tokens per chunk)
+3. Generate embeddings via Ollama for each chunk
+4. Convert markdown to HTML via Pandoc
+5. Output `index.html` + `chunks.json`
 
-API keys are requested in the browser when first using chat.
+### Runtime (in browser)
+1. User asks a question
+2. Query is embedded via Ollama API
+3. Cosine similarity finds top-3 relevant chunks
+4. Retrieved chunks + question sent to Ollama chat
+5. Response displayed in chat widget
 
 ## Project Structure
 
@@ -116,12 +134,9 @@ my-book/
 │   └── content.md        # Chapter markdown
 ├── 02-chapter-1/
 │   └── content.md
-└── output.html          # Generated book
+├── output.html           # Generated book
+└── chunks.json           # Embeddings for RAG
 ```
-
-## Examples
-
-See [docs/examples.md](docs/examples.md) for complete examples.
 
 ## Testing
 
