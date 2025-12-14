@@ -1,5 +1,11 @@
+import shutil
+import pytest
 from click.testing import CliRunner
 from bookrag.cli import cli
+
+# Check if pandoc is installed
+PANDOC_AVAILABLE = shutil.which("pandoc") is not None
+
 
 def test_cli_help():
     """Test that CLI help works."""
@@ -18,6 +24,7 @@ def test_build_command_requires_args():
     assert result.exit_code != 0
     assert 'Missing argument' in result.output or 'Usage:' in result.output
 
+@pytest.mark.skipif(not PANDOC_AVAILABLE, reason="pandoc not installed")
 def test_build_command_success(tmp_path):
     """Test successful build via CLI."""
     from pathlib import Path

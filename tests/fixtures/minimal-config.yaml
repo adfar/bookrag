@@ -1,5 +1,7 @@
 title: "Minimal Book"
-author: "Test Author"
+model: "llama3.2"
+embedding_model: "nomic-embed-text"
+system_prompt: "You are helpful."
 
 chapters:
   - id: "intro"

@@ -1,5 +1,8 @@
 title: "Sample Book"
 author: "Test Author"
+model: "llama3.2"
+embedding_model: "nomic-embed-text"
+system_prompt: "You are a helpful assistant for this book."
 
 chapters:
   - id: "intro"

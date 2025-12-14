@@ -29,6 +29,14 @@ def load_config(config_path: Path) -> Dict[str, Any]:
     if not config.get("chapters"):
         raise ValueError("Missing required field: chapters")
 
+    # Validate required AI fields (Ollama-only in v1)
+    if not config.get("model"):
+        raise ValueError("Missing required field: model")
+    if not config.get("embedding_model"):
+        raise ValueError("Missing required field: embedding_model")
+    if not config.get("system_prompt"):
+        raise ValueError("Missing required field: system_prompt")
+
     # Validate chapters structure
     for i, chapter in enumerate(config["chapters"]):
         if not chapter.get("id"):
@@ -37,18 +45,5 @@ def load_config(config_path: Path) -> Dict[str, Any]:
             raise ValueError(f"Chapter {i}: missing required field 'title'")
         if not chapter.get("folder"):
             raise ValueError(f"Chapter {i}: missing required field 'folder'")
-
-    # Validate AI config if present
-    if "ai" in config:
-        ai = config["ai"]
-        if not ai.get("backend"):
-            raise ValueError("AI config missing required field: backend")
-
-        supported_backends = ["anthropic", "openai", "ollama"]
-        if ai["backend"] not in supported_backends:
-            raise ValueError(
-                f"Unsupported AI backend: {ai['backend']}. "
-                f"Supported: {', '.join(supported_backends)}"
-            )
 
     return config

@@ -38,9 +38,8 @@ def build_book(source_dir: Path, output_file: Path):
     config_path = source_dir / "bookrag.yaml"
     config = load_config(config_path)
 
-    # Check if AI is configured
-    has_ai = "ai" in config
-    layout_class = "three-column" if has_ai else "two-column"
+    # Always use 3-column layout (AI is mandatory in v1)
+    layout_class = "three-column"
 
     # Process each chapter through pandoc
     chapters_html = []
@@ -71,19 +70,24 @@ def build_book(source_dir: Path, output_file: Path):
     # Generate TOC
     toc_html = generate_toc(config["chapters"])
 
-    # Prepare chat widget HTML if AI configured
-    chat_html = ""
-    if has_ai:
-        chat_html = '''
-        <aside class="chat-widget">
-            <div class="chat-header">AI Assistant</div>
-            <div class="chat-messages" id="chat-messages"></div>
-            <div class="chat-input">
-                <textarea id="user-input" placeholder="Ask a question..."></textarea>
-                <button id="send-btn">Send</button>
-            </div>
-        </aside>
-        '''
+    # Always generate chat widget (AI is mandatory)
+    chat_html = '''
+    <aside class="chat-widget">
+        <div class="chat-header">AI Assistant</div>
+        <div class="chat-messages" id="chat-messages"></div>
+        <div class="chat-input">
+            <textarea id="user-input" placeholder="Ask a question..."></textarea>
+            <button id="send-btn">Send</button>
+        </div>
+    </aside>
+    '''
+
+    # Prepare chat config for Ollama
+    chat_config = {
+        "model": config["model"],
+        "embedding_model": config["embedding_model"],
+        "system_prompt": config["system_prompt"],
+    }
 
     # Prepare template variables
     template_vars = {
@@ -94,7 +98,7 @@ def build_book(source_dir: Path, output_file: Path):
         "chapters_html": "\n".join(chapters_html),
         "chat_html": chat_html,
         "book_content_json": json.dumps("\n\n".join(book_content_parts)),
-        "chat_config_json": json.dumps(config.get("ai")) if has_ai else "null",
+        "chat_config_json": json.dumps(chat_config),
     }
 
     # Render template
