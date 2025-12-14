@@ -293,6 +293,54 @@
             initializeChat();
         });
 
+        // RAG functions
+        function cosineSimilarity(a, b) {
+            if (a.length !== b.length) return 0;
+            let dotProduct = 0;
+            let normA = 0;
+            let normB = 0;
+            for (let i = 0; i < a.length; i++) {
+                dotProduct += a[i] * b[i];
+                normA += a[i] * a[i];
+                normB += b[i] * b[i];
+            }
+            if (normA === 0 || normB === 0) return 0;
+            return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+        }
+
+        async function getQueryEmbedding(query) {
+            const response = await fetch('http://localhost:11434/api/embeddings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: CHAT_CONFIG.embedding_model,
+                    prompt: query
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to get query embedding from Ollama');
+            }
+
+            const data = await response.json();
+            return data.embedding;
+        }
+
+        async function findRelevantChunks(query, topK = 3) {
+            // Get embedding for the query
+            const queryEmbedding = await getQueryEmbedding(query);
+
+            // Calculate similarity with all chunks
+            const scored = CHUNKS.map(chunk => ({
+                chunk,
+                score: cosineSimilarity(queryEmbedding, chunk.embedding)
+            }));
+
+            // Sort by similarity and return top K
+            scored.sort((a, b) => b.score - a.score);
+            return scored.slice(0, topK).map(s => s.chunk);
+        }
+
         // Chat functionality (Ollama only)
         function initializeChat() {
             const sendBtn = document.getElementById('send-btn');
@@ -350,10 +398,11 @@
             }
 
             async function sendToOllama(userMessage) {
-                // Build context from chunks (RAG retrieval will be added in next step)
-                // For now, use first 3 chunks as basic context
-                const contextChunks = CHUNKS.slice(0, 3);
-                const context = contextChunks.map(chunk =>
+                // RAG: Find relevant chunks using vector similarity
+                const relevantChunks = await findRelevantChunks(userMessage, 3);
+
+                // Build context from retrieved chunks
+                const context = relevantChunks.map(chunk =>
                     `[${chunk.heading || 'Section'}]\n${chunk.content}`
                 ).join('\n\n---\n\n');
 
